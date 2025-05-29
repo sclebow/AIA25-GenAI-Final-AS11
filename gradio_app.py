@@ -13,7 +13,14 @@ def detect_hands_and_faces(frame):
     frame = frame.copy()
 
     # Crop and resize the frame to speed up processing
-    frame = cv2.resize(frame, (320, 240))  # Resize to a standard size for processing
+    max_size = 320
+
+    # Resize frame so that the larger dimension is max_size and maintain aspect ratio
+    h, w = frame.shape[:2]
+    if max(h, w) > max_size:
+        scale = max_size / float(max(h, w))
+        new_h, new_w = int(h * scale), int(w * scale)
+        frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
 
     # Convert frame to numpy array if needed
     if not isinstance(frame, np.ndarray):
@@ -29,18 +36,6 @@ def detect_hands_and_faces(frame):
     for (x, y, w, h) in faces:
         cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
         cv2.putText(frame, 'Face', (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-    # Simple hand detection using color thresholding (skin color in HSV)
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    lower_skin = np.array([0, 20, 70], dtype=np.uint8)
-    upper_skin = np.array([20, 255, 255], dtype=np.uint8)
-    mask = cv2.inRange(hsv, lower_skin, upper_skin)
-    contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    for cnt in contours:
-        area = cv2.contourArea(cnt)
-        if area > 3000:  # Filter small contours
-            x, y, w, h = cv2.boundingRect(cnt)
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cv2.putText(frame, 'Hand', (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
     # Convert back to RGB for Gradio
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     return frame
