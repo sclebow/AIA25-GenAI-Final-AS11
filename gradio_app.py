@@ -9,6 +9,12 @@ face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_fronta
 
 # Define a function to process video frames for hand and face detection
 def detect_hands_and_faces(frame):
+    # Ensure frame is writable
+    frame = frame.copy()
+
+    # Crop and resize the frame to speed up processing
+    frame = cv2.resize(frame, (320, 240))  # Resize to a standard size for processing
+
     # Convert frame to numpy array if needed
     if not isinstance(frame, np.ndarray):
         frame = np.array(frame)
@@ -39,13 +45,23 @@ def detect_hands_and_faces(frame):
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     return frame
 
+# Define Gradio interface for live webcam processing
 with gr.Blocks(title="Live Webcam Feed with Hand and Face Tracking") as demo:
     gr.Markdown("# Live Webcam Feed\nHand and Face Tracking using OpenCV.")
-    webcam = gr.Video(
-        label="Webcam Feed",
-        streaming=True,
-        sources=["webcam"],
-    )
+    
+    with gr.Row():
+        webcam = gr.Image(
+            sources=["webcam"], 
+            streaming=True, 
+            label="Webcam Input", 
+            # interactive=False,
+            width=300,
+            height=300,
+            webcam_constraints={"width": 240, "height": 240, "fps": 15}  # Adjusted constraints for webcam
+        )
+        output = gr.Image(label="Processed Output")  # Removed live=True for compatibility
+    
+    webcam.stream(fn=detect_hands_and_faces, inputs=webcam, outputs=output)
 
 demo.launch()
 
