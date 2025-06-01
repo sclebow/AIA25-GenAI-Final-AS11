@@ -76,15 +76,33 @@ with gr.Blocks(title="Live Webcam Feed with Hand and Face Tracking") as demo:
         )
         output = gr.Image(label="Processed Output")
     faces_gallery = gr.Gallery(label="Captured Faces", visible=False, columns=num_faces_to_capture, height="auto")
+    processed_faces_gallery = gr.Gallery(label="Processed Faces", visible=False, columns=num_faces_to_capture, height="auto")
+
+    def process_faces(faces):
+        """
+        Placeholder for face processing logic. Takes a list of face images and returns a list of processed face images.
+        """
+        # TODO: Implement face processing logic here
+        return faces
 
     def stream_callback(frame):
         result = detect_faces(frame)
         if result is None:
-            return [None, gr.update(visible=True, value=face_regions)]
+            processed = process_faces(face_regions)
+            return [
+                gr.update(visible=False, streaming=False),  # Hide webcam
+                gr.update(visible=False),  # Hide output
+                gr.update(visible=True, value=face_regions),  # Show gallery with captured faces
+                gr.update(visible=True, value=processed)  # Show processed faces gallery
+            ]
+        return [
+            frame,  # Return the original frame
+            result,  # Return the last detected face
+            gr.update(visible=False),  # Hide gallery if not capturing faces
+            gr.update(visible=False)   # Hide processed faces gallery
+        ]
 
-        return [result, gr.update(visible=False)]
-
-    webcam.stream(fn=stream_callback, inputs=webcam, outputs=[output, faces_gallery])
+    webcam.stream(fn=stream_callback, inputs=webcam, outputs=[webcam, output, faces_gallery, processed_faces_gallery])
 
 demo.launch(share=True)
 
