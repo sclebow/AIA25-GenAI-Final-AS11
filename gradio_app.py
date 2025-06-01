@@ -35,11 +35,29 @@ def detect_faces(frame):
     gray = cv2.cvtColor(process_frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.1, 4)
     for (x, y, w, h) in faces:
-        cv2.rectangle(process_frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-        cv2.putText(process_frame, 'Face', (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        # cv2.rectangle(process_frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        # cv2.putText(process_frame, 'Face', (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+
+        # Draw rectangle around the face on the original frame, use the scale factor to adjust the coordinates
+        scale_x = original_frame.shape[1] / float(process_frame.shape[1])
+        scale_y = original_frame.shape[0] / float(process_frame.shape[0])
+        # cv2.rectangle(original_frame, 
+        #               (int(x * scale_x), int(y * scale_y)), 
+        #               (int((x + w) * scale_x), int((y + h) * scale_y)), 
+        #               (255, 0, 0), 2)
+        
+        # # Draw label on the original frame
+        # cv2.putText(original_frame, 'Face', 
+        #             (int(x * scale_x), int(y * scale_y) - 10), 
+        #             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        
+        # Crop the face region from the original frame
+        face_region = original_frame[int(y * scale_y):int((y + h) * scale_y), 
+                                     int(x * scale_x):int((x + w) * scale_x)]
+        
     # Convert back to RGB for Gradio
-    process_frame = cv2.cvtColor(process_frame, cv2.COLOR_BGR2RGB)
-    return process_frame
+    # process_frame = cv2.cvtColor(process_frame, cv2.COLOR_BGR2RGB)
+    return face_region
 
 # Define Gradio interface for live webcam processing
 with gr.Blocks(title="Live Webcam Feed with Hand and Face Tracking") as demo:
@@ -59,5 +77,5 @@ with gr.Blocks(title="Live Webcam Feed with Hand and Face Tracking") as demo:
     
     webcam.stream(fn=detect_faces, inputs=webcam, outputs=output)
 
-demo.launch()
+demo.launch(share=True)
 
