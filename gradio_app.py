@@ -7,8 +7,17 @@ import numpy as np
 # Load OpenCV's pre-trained Haar cascade for face detection
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
+# Global list to store face regions
+face_regions = []
+# Global number of faces to capture
+num_faces_to_capture = 10
+
 # Define a function to process video frames for face detection
 def detect_faces(frame):
+    global face_regions, num_faces_to_capture
+    # Only capture more faces if we haven't reached the limit
+    if len(face_regions) >= num_faces_to_capture:
+        return None
     # Ensure frame is writable
     process_frame = frame.copy()
     original_frame = frame.copy()
@@ -34,48 +43,48 @@ def detect_faces(frame):
     # Face detection
     gray = cv2.cvtColor(process_frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-    for (x, y, w, h) in faces:
-        # cv2.rectangle(process_frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-        # cv2.putText(process_frame, 'Face', (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-
-        # Draw rectangle around the face on the original frame, use the scale factor to adjust the coordinates
+    for i, (x, y, w, h) in enumerate(faces):
+        if len(face_regions) >= num_faces_to_capture:
+            break
         scale_x = original_frame.shape[1] / float(process_frame.shape[1])
         scale_y = original_frame.shape[0] / float(process_frame.shape[0])
-        # cv2.rectangle(original_frame, 
-        #               (int(x * scale_x), int(y * scale_y)), 
-        #               (int((x + w) * scale_x), int((y + h) * scale_y)), 
-        #               (255, 0, 0), 2)
-        
-        # # Draw label on the original frame
-        # cv2.putText(original_frame, 'Face', 
-        #             (int(x * scale_x), int(y * scale_y) - 10), 
-        #             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-        
-        # Crop the face region from the original frame
         face_region = original_frame[int(y * scale_y):int((y + h) * scale_y), 
                                      int(x * scale_x):int((x + w) * scale_x)]
-        
-    # Convert back to RGB for Gradio
-    # process_frame = cv2.cvtColor(process_frame, cv2.COLOR_BGR2RGB)
-    return face_region
+        face_regions.append(face_region)
+        print(f"Captured face {len(face_regions)}: {face_region.shape}")
+        print(f"len(face_regions): {len(face_regions)}")
+    # If we've captured enough faces, return None to stop streaming
+    if len(face_regions) >= num_faces_to_capture:
+        return None
+    # If no face was found, return the original frame (or None)
+    if len(face_regions) == 0:
+        return frame  # or None if you prefer a blank output
+    # Otherwise, return the last detected face
+    return face_regions[-1]
 
-# Define Gradio interface for live webcam processing
+# Custom function to display captured faces after streaming stops
 with gr.Blocks(title="Live Webcam Feed with Hand and Face Tracking") as demo:
     gr.Markdown("# Live Webcam Feed\nHand and Face Tracking using OpenCV.")
-    
-    with gr.Row():
+    with gr.Row() as webcam_row:
         webcam = gr.Image(
             sources=["webcam"], 
             streaming=True, 
             label="Webcam Input", 
-            # interactive=False,
             width=300,
             height=300,
-            webcam_constraints={"width": 240, "height": 240, "fps": 15}  # Adjusted constraints for webcam
+            webcam_constraints={"width": 240, "height": 240, "fps": 15}
         )
-        output = gr.Image(label="Processed Output")  # Removed live=True for compatibility
-    
-    webcam.stream(fn=detect_faces, inputs=webcam, outputs=output)
+        output = gr.Image(label="Processed Output")
+    faces_gallery = gr.Gallery(label="Captured Faces", visible=False, columns=num_faces_to_capture, height="auto")
+
+    def stream_callback(frame):
+        result = detect_faces(frame)
+        if result is None:
+            return [None, gr.update(visible=True, value=face_regions)]
+
+        return [result, gr.update(visible=False)]
+
+    webcam.stream(fn=stream_callback, inputs=webcam, outputs=[output, faces_gallery])
 
 demo.launch(share=True)
 
