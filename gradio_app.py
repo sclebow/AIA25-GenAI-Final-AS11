@@ -3,6 +3,8 @@
 import gradio as gr
 import cv2
 import numpy as np
+import imageio
+import tempfile
 
 # Load OpenCV's pre-trained Haar cascade for face detection
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -75,8 +77,20 @@ with gr.Blocks(title="Live Webcam Feed with Hand and Face Tracking") as demo:
             webcam_constraints={"width": 240, "height": 240, "fps": 15}
         )
         output = gr.Image(label="Processed Output")
-    faces_gallery = gr.Gallery(label="Captured Faces", visible=False, columns=num_faces_to_capture, height="auto")
-    processed_faces_gallery = gr.Gallery(label="Processed Faces", visible=False, columns=num_faces_to_capture, height="auto")
+    with gr.Row():
+        faces_gallery = gr.Gallery(label="Captured Faces", visible=False, columns=num_faces_to_capture, height="auto", scale=1)
+        faces_gif = gr.Image(label="Faces GIF", visible=False, scale=0, height=400)
+    with gr.Row():
+        processed_faces_gallery = gr.Gallery(label="Processed Faces", visible=False, columns=num_faces_to_capture, height="auto", scale=1)
+        processed_gif = gr.Image(label="Processed Faces GIF", visible=False, scale=0, height=400)
+
+    def faces_to_gif(faces, size=(128, 128)):
+        if not faces:
+            return None
+        resized_faces = [cv2.resize(cv2.cvtColor(f, cv2.COLOR_BGR2RGB), size) for f in faces]
+        with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as tmpfile:
+            imageio.mimsave(tmpfile.name, resized_faces, format='GIF', duration=0.3)
+            return tmpfile.name
 
     def process_faces(faces):
         """
@@ -89,20 +103,30 @@ with gr.Blocks(title="Live Webcam Feed with Hand and Face Tracking") as demo:
         result = detect_faces(frame)
         if result is None:
             processed = process_faces(face_regions)
+            faces_gif_path = faces_to_gif(face_regions)
+            processed_gif_path = faces_to_gif(processed)
             return [
                 gr.update(visible=False, streaming=False),  # Hide webcam
                 gr.update(visible=False),  # Hide output
                 gr.update(visible=True, value=face_regions),  # Show gallery with captured faces
-                gr.update(visible=True, value=processed)  # Show processed faces gallery
+                gr.update(visible=True, value=faces_gif_path),  # Show faces GIF
+                gr.update(visible=True, value=processed),  # Show processed faces gallery
+                gr.update(visible=True, value=processed_gif_path)  # Show processed faces GIF
             ]
         return [
             frame,  # Return the original frame
             result,  # Return the last detected face
             gr.update(visible=False),  # Hide gallery if not capturing faces
-            gr.update(visible=False)   # Hide processed faces gallery
+            gr.update(visible=False),  # Hide faces GIF
+            gr.update(visible=False),  # Hide processed faces gallery
+            gr.update(visible=False)   # Hide processed faces GIF
         ]
 
-    webcam.stream(fn=stream_callback, inputs=webcam, outputs=[webcam, output, faces_gallery, processed_faces_gallery])
+    webcam.stream(
+        fn=stream_callback,
+        inputs=webcam,
+        outputs=[webcam, output, faces_gallery, faces_gif, processed_faces_gallery, processed_gif]
+    )
 
 demo.launch()
 
