@@ -65,10 +65,10 @@ def detect_faces(frame):
     return face_regions[-1]
 
 # Custom function to display captured faces after streaming stops
-with gr.Blocks(title="Live Webcam Feed with Hand and Face Tracking") as demo:
+with gr.Blocks(title="Live Webcam Feed with Face Tracking") as demo:
     face_regions = []  # Reset face regions for each new session
 
-    gr.Markdown("# Live Webcam Feed\nHand and Face Tracking using OpenCV.")
+    gr.Markdown("# Face Tracking using OpenCV.\n This app captures faces from your webcam and displays them in a gallery.\n\n **Note:** Ensure your webcam is enabled and accessible by the browser.")
     with gr.Row() as webcam_row:
         webcam = gr.Image(
             sources=["webcam"], 
@@ -89,7 +89,7 @@ with gr.Blocks(title="Live Webcam Feed with Hand and Face Tracking") as demo:
 
     with gr.Row():
         processed_faces_gallery = gr.Gallery(label="Processed Faces", visible=False, columns=num_faces_to_capture, scale=1, height=row_height)
-        processed_gif = gr.Image(label="Processed Faces GIF", visible=False, scale=0, width=gif_width, height=row_height)
+        processed_gif = gr.Image(label="Processed GIF", visible=False, scale=0, width=gif_width, height=row_height)
 
     def faces_to_gif(faces, size=(128, 128)):
         if not faces:
