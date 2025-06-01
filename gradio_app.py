@@ -76,7 +76,7 @@ with gr.Blocks(title="Live Webcam Feed with Hand and Face Tracking") as demo:
             label="Webcam Input", 
             width=300,
             height=300,
-            webcam_constraints={"width": 240, "height": 240, "fps": 15}
+            # webcam_constraints={"width": 240, "height": 240, "fps": 15}
         )
         output = gr.Image(label="Face Output")
     
@@ -94,9 +94,9 @@ with gr.Blocks(title="Live Webcam Feed with Hand and Face Tracking") as demo:
     def faces_to_gif(faces, size=(128, 128)):
         if not faces:
             return None
-        resized_faces = [cv2.resize(cv2.cvtColor(f, cv2.COLOR_BGR2RGB), size) for f in faces]
+        resized_faces = [cv2.resize(f, size) for f in faces]
         with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as tmpfile:
-            imageio.mimsave(tmpfile.name, resized_faces, format='GIF', duration=0.3)
+            imageio.mimsave(tmpfile.name, resized_faces, format='GIF', duration=0.3, loop=0)
             return tmpfile.name
 
     def process_faces(faces):
