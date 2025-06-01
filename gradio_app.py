@@ -104,5 +104,5 @@ with gr.Blocks(title="Live Webcam Feed with Hand and Face Tracking") as demo:
 
     webcam.stream(fn=stream_callback, inputs=webcam, outputs=[webcam, output, faces_gallery, processed_faces_gallery])
 
-demo.launch(share=True)
+demo.launch()
 
