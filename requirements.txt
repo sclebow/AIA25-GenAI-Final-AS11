@@ -1,0 +1,7 @@
+opencv-python-headless
+numpy
+imageio
+matplotlib
+ipython
+gradio
+tempfile
