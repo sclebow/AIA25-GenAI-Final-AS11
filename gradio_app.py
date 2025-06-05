@@ -64,82 +64,79 @@ def detect_faces(frame):
     # Otherwise, return the last detected face
     return face_regions[-1]
 
-def run():
-    # Custom function to display captured faces after streaming stops
-    with gr.Blocks(title="Live Webcam Feed with Face Tracking") as demo:
-        face_regions = []  # Reset face regions for each new session
+# Custom function to display captured faces after streaming stops
+with gr.Blocks(title="Live Webcam Feed with Face Tracking") as demo:
+    face_regions = []  # Reset face regions for each new session
 
-        gr.Markdown("# Face Tracking using OpenCV.\n This app captures faces from your webcam and displays them in a gallery.\n\n **Note:** Ensure your webcam is enabled and accessible by the browser.")
-        with gr.Row() as webcam_row:
-            webcam = gr.Image(
-                sources=["webcam"], 
-                streaming=True, 
-                label="Webcam Input", 
-                width=300,
-                height=300,
-                # webcam_constraints={"width": 240, "height": 240, "fps": 15}
-            )
-            output = gr.Image(label="Face Output")
-        
-        row_height = 300
-        gif_width = 200
-        with gr.Row():
-            faces_gallery = gr.Gallery(label="Captured Faces", visible=False, columns=num_faces_to_capture, scale=1, height=row_height)
-            faces_gif = gr.Image(label="Faces GIF", visible=False, scale=0, width=gif_width, height=row_height)
-            faces_count = gr.Markdown(f"# **Faces captured:** 0/{num_faces_to_capture}", visible=True)
-
-        with gr.Row():
-            processed_faces_gallery = gr.Gallery(label="Processed Faces", visible=False, columns=num_faces_to_capture, scale=1, height=row_height)
-            processed_gif = gr.Image(label="Processed GIF", visible=False, scale=0, width=gif_width, height=row_height)
-
-        def faces_to_gif(faces, size=(128, 128)):
-            if not faces:
-                return None
-            resized_faces = [cv2.resize(f, size) for f in faces]
-            with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as tmpfile:
-                imageio.mimsave(tmpfile.name, resized_faces, format='GIF', duration=0.3, loop=0)
-                return tmpfile.name
-
-        def process_faces(faces):
-            """
-            Placeholder for face processing logic. Takes a list of face images and returns a list of processed face images.
-            """
-            # TODO: Implement face processing logic here
-            return faces
-
-        def stream_callback(frame):
-            result = detect_faces(frame)
-            faces_count_value = f"# **Faces captured:** {len(face_regions)}/{num_faces_to_capture}"
-            if result is None:
-                print("No more faces to capture.")
-                processed = process_faces(face_regions)
-                faces_gif_path = faces_to_gif(face_regions)
-                processed_gif_path = faces_to_gif(processed)
-                return [
-                    gr.update(visible=False, streaming=False),  # Hide webcam
-                    gr.update(visible=False),  # Hide output
-                    gr.update(visible=True, value=face_regions),  # Show gallery with captured faces
-                    gr.update(visible=True, value=faces_gif_path),  # Show faces GIF
-                    gr.update(visible=False, value=faces_count_value),  # Show count
-                    gr.update(visible=True, value=processed),  # Show processed faces gallery
-                    gr.update(visible=True, value=processed_gif_path)  # Show processed faces GIF
-                ]
-            return [
-                frame,  # Return the original frame
-                result,  # Return the last detected face
-                gr.update(visible=False),  # Hide gallery if not capturing faces
-                gr.update(visible=False),  # Hide faces GIF
-                gr.update(visible=True, value=faces_count_value),  # Show count
-                gr.update(visible=False),  # Hide processed faces gallery
-                gr.update(visible=False)   # Hide processed faces GIF
-            ]
-
-        webcam.stream(
-            fn=stream_callback,
-            inputs=webcam,
-            outputs=[webcam, output, faces_gallery, faces_gif, faces_count, processed_faces_gallery, processed_gif]
+    gr.Markdown("# Face Tracking using OpenCV.\n This app captures faces from your webcam and displays them in a gallery.\n\n **Note:** Ensure your webcam is enabled and accessible by the browser.")
+    with gr.Row() as webcam_row:
+        webcam = gr.Image(
+            sources=["webcam"], 
+            streaming=True, 
+            label="Webcam Input", 
+            width=300,
+            height=300,
+            # webcam_constraints={"width": 240, "height": 240, "fps": 15}
         )
+        output = gr.Image(label="Face Output")
+    
+    row_height = 300
+    gif_width = 200
+    with gr.Row():
+        faces_gallery = gr.Gallery(label="Captured Faces", visible=False, columns=num_faces_to_capture, scale=1, height=row_height)
+        faces_gif = gr.Image(label="Faces GIF", visible=False, scale=0, width=gif_width, height=row_height)
+        faces_count = gr.Markdown(f"# **Faces captured:** 0/{num_faces_to_capture}", visible=True)
 
-    demo.launch()
+    with gr.Row():
+        processed_faces_gallery = gr.Gallery(label="Processed Faces", visible=False, columns=num_faces_to_capture, scale=1, height=row_height)
+        processed_gif = gr.Image(label="Processed GIF", visible=False, scale=0, width=gif_width, height=row_height)
 
-# run()
+    def faces_to_gif(faces, size=(128, 128)):
+        if not faces:
+            return None
+        resized_faces = [cv2.resize(f, size) for f in faces]
+        with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as tmpfile:
+            imageio.mimsave(tmpfile.name, resized_faces, format='GIF', duration=0.3, loop=0)
+            return tmpfile.name
+
+    def process_faces(faces):
+        """
+        Placeholder for face processing logic. Takes a list of face images and returns a list of processed face images.
+        """
+        # TODO: Implement face processing logic here
+        return faces
+
+    def stream_callback(frame):
+        result = detect_faces(frame)
+        faces_count_value = f"# **Faces captured:** {len(face_regions)}/{num_faces_to_capture}"
+        if result is None:
+            print("No more faces to capture.")
+            processed = process_faces(face_regions)
+            faces_gif_path = faces_to_gif(face_regions)
+            processed_gif_path = faces_to_gif(processed)
+            return [
+                gr.update(visible=False, streaming=False),  # Hide webcam
+                gr.update(visible=False),  # Hide output
+                gr.update(visible=True, value=face_regions),  # Show gallery with captured faces
+                gr.update(visible=True, value=faces_gif_path),  # Show faces GIF
+                gr.update(visible=False, value=faces_count_value),  # Show count
+                gr.update(visible=True, value=processed),  # Show processed faces gallery
+                gr.update(visible=True, value=processed_gif_path)  # Show processed faces GIF
+            ]
+        return [
+            frame,  # Return the original frame
+            result,  # Return the last detected face
+            gr.update(visible=False),  # Hide gallery if not capturing faces
+            gr.update(visible=False),  # Hide faces GIF
+            gr.update(visible=True, value=faces_count_value),  # Show count
+            gr.update(visible=False),  # Hide processed faces gallery
+            gr.update(visible=False)   # Hide processed faces GIF
+        ]
+
+    webcam.stream(
+        fn=stream_callback,
+        inputs=webcam,
+        outputs=[webcam, output, faces_gallery, faces_gif, faces_count, processed_faces_gallery, processed_gif]
+    )
+
+demo.launch()
