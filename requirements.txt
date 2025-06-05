@@ -4,4 +4,3 @@ imageio
 matplotlib
 ipython
 gradio
-tempfile
