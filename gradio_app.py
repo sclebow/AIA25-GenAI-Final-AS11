@@ -49,6 +49,14 @@ def timed_capture(frame):
     global captured_frames, num_images_to_capture, capture_start_time, capture_interval, last_capture_time
     import time
     now = time.time()
+    # Crop to center square
+    h, w = frame.shape[:2]
+    min_dim = min(h, w)
+    top = (h - min_dim) // 2
+    left = (w - min_dim) // 2
+    square_frame = frame[top:top+min_dim, left:left+min_dim]
+    # Resize to 128x128
+    square_frame = cv2.resize(square_frame, (128, 128), interpolation=cv2.INTER_AREA)
     if capture_start_time is None:
         capture_start_time = now
         last_capture_time = now - capture_interval  # So first frame is captured immediately
@@ -56,14 +64,14 @@ def timed_capture(frame):
     if len(captured_frames) < num_images_to_capture:
         # Capture at intervals
         if now - last_capture_time >= capture_interval:
-            captured_frames.append(frame.copy())
+            captured_frames.append(square_frame.copy())
             last_capture_time = now
             print(f"Captured image {len(captured_frames)} at {now - capture_start_time:.2f}s")
     # If we've captured enough images, return None to stop streaming
     if len(captured_frames) >= num_images_to_capture:
         return None
     # Otherwise, return the current frame
-    return frame
+    return square_frame
 
 # Custom function to display captured faces after streaming stops
 with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
