@@ -80,10 +80,18 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
     last_capture_time = None
 
     gr.Markdown("# Timed Image Capture using OpenCV.\n This app captures a set number of images from your webcam, evenly spaced over a set duration, and displays them in a gallery.\n\n **Note:** Ensure your webcam is enabled and accessible by the browser.")
+    # Settings row at the top
     with gr.Row():
         num_images_slider = gr.Slider(minimum=1, maximum=10, value=num_images_to_capture, step=1, label="Number of Images to Capture")
         duration_slider = gr.Slider(minimum=2, maximum=30, value=capture_duration, step=1, label="Capture Duration (seconds)")
         interval_display = gr.Markdown(f"**Interval:** {capture_interval:.2f} seconds", elem_id="interval-display")
+        invert_depth_checkbox = gr.Checkbox(label="Invert Depth", value=False)
+        depth_contrast_slider = gr.Slider(minimum=0.5, maximum=2.0, value=1.0, step=0.05, label="Depth Contrast")
+
+    # Reset button row below settings
+    with gr.Row():
+        reset_button = gr.Button("Reset App (Images will be reset)", variant="stop")
+
     with gr.Row() as webcam_row:
         webcam = gr.Image(
             sources=["webcam"],
@@ -104,13 +112,6 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
     with gr.Row():
         processed_images_gallery = gr.Gallery(label="Processed Images", visible=False, columns=num_images_to_capture, scale=1, height=row_height)
         processed_gif = gr.Image(label="Processed GIF", visible=False, scale=0, width=gif_width, height=row_height)
-
-    with gr.Row():
-        reset_button = gr.Button("Reset", variant="stop")
-
-    with gr.Row():
-        invert_depth_checkbox = gr.Checkbox(label="Invert Depth", value=False)
-        depth_contrast_slider = gr.Slider(minimum=0.5, maximum=2.0, value=1.0, step=0.05, label="Depth Contrast")
 
     def images_to_gif(images, size=(128, 128)):
         if not images:
