@@ -31,6 +31,8 @@ import torch
 
 from transformers import pipeline
 
+from config import Config
+
 depth_estimator = pipeline('depth-estimation', model="LiheYoung/depth-anything-small-hf")
 
 # Global list to store captured frames
