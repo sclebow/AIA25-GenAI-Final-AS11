@@ -55,7 +55,7 @@ last_capture_time = None
 # Global variables to track default settings
 default_prompt = "Multistory solid glass office building with white frames built by Norman Foster, with park and cherry blossoms in foreground"
 default_seed = 7797676568
-default_steps = 20
+default_steps = 5
 
 # Define a function to process video frames for timed capture
 
@@ -186,6 +186,10 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
             processed = process_images(captured_frames, invert_depth, depth_contrast, user_prompt, user_seed, user_steps)
             images_gif_path = images_to_gif(captured_frames)
             processed_gif_path = images_to_gif(processed)
+            # Reset state after processing to avoid repeated calls
+            captured_frames.clear()
+            capture_start_time = None
+            last_capture_time = None
             return [
                 gr.update(visible=False, streaming=False),  # Hide webcam
                 gr.update(visible=False),  # Hide output
