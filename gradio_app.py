@@ -154,7 +154,7 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
 
     def update_interval(num_images, duration):
         interval = duration / num_images if num_images > 0 else 0
-        return gr.Markdown.update(value=f"**Interval:** {interval:.2f} seconds")
+        return gr.update(value=f"**Interval:** {interval:.2f} seconds")
 
     num_images_slider.change(update_interval, [num_images_slider, duration_slider], interval_display)
     duration_slider.change(update_interval, [num_images_slider, duration_slider], interval_display)
