@@ -127,7 +127,8 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
             depth_image = depth_estimator(pil_image)['depth']
             depth_image_np = np.array(depth_image).astype(np.float32)
             # Normalize to 0-1
-            depth_image_np = (depth_image_np - depth_image_np.min()) / (depth_image_np.ptp() + 1e-8)
+            ptp_val = np.ptp(depth_image_np)
+            depth_image_np = (depth_image_np - depth_image_np.min()) / (ptp_val + 1e-8)
             # Apply contrast/stretch
             mean = 0.5
             depth_image_np = mean + (depth_image_np - mean) * depth_contrast
