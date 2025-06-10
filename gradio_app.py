@@ -27,6 +27,7 @@ import cv2
 import imageio
 import tempfile
 from PIL import Image
+import torch
 
 from transformers import pipeline
 
@@ -158,7 +159,11 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
             depth_image_np = cv2.cvtColor(depth_image_np, cv2.COLOR_RGB2BGR)
             # processed_images.append(depth_image_np)
 
-            
+            scale = 0.5
+            generator = torch.Generator(Config.TORCH_DEVICE).manual_seed(Config.SEED)
+            generated_image = pipe(Config.PROMPT, image=depth_image_np, control_image=depth_image_np, num_inference_steps=Config.STEPS, generator=generator, strength=0.99,controlnet_conditioning_scale=scale).images[0]
+
+            process_images.append(generated_image)
         return processed_images
 
     def stream_callback(frame, invert_depth, depth_contrast, user_prompt):
