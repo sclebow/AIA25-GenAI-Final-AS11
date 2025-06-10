@@ -134,12 +134,12 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
             imageio.mimsave(tmpfile.name, resized_images, format='GIF', duration=0.6, loop=0)
             return tmpfile.name
 
-    def process_images(images, invert_depth=False, depth_contrast=1.0, user_prompt=None):
+    def process_images(images, invert_depth=False, depth_contrast=1.0, user_prompt=None, user_seed=None, user_steps=None):
         processed_images = []
-        # You can use user_prompt in your processing logic if needed
+        # Use user_prompt, user_seed, user_steps as strings
         Config.PROMPT = user_prompt if user_prompt else default_prompt
-        Config.SEED = int(user_seed) if user_seed.isdigit() else default_seed
-        Config.STEPS = int(user_steps) if user_steps.isdigit() else default_steps
+        Config.SEED = int(user_seed) if user_seed and str(user_seed).isdigit() else default_seed
+        Config.STEPS = int(user_steps) if user_steps and str(user_steps).isdigit() else default_steps
         for img in images:
             pil_image = Image.fromarray(img)
             depth_image = depth_estimator(pil_image)['depth']
@@ -165,16 +165,16 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
             generator = torch.Generator(Config.TORCH_DEVICE).manual_seed(Config.SEED)
             generated_image = pipe(Config.PROMPT, image=depth_image_np, control_image=depth_image_np, num_inference_steps=Config.STEPS, generator=generator, strength=0.99,controlnet_conditioning_scale=scale).images[0]
 
-            process_images.append(generated_image)
+            processed_images.append(generated_image)
         return processed_images
 
-    def stream_callback(frame, invert_depth, depth_contrast, user_prompt):
+    def stream_callback(frame, invert_depth, depth_contrast, user_prompt, user_seed, user_steps):
         global captured_frames, capture_start_time, last_capture_time
         result = timed_capture(frame)
         images_count_value = f"# **Images captured:** {len(captured_frames)}/{num_images_to_capture}"
         if result is None:
             print("No more images to capture.")
-            processed = process_images(captured_frames, invert_depth, depth_contrast, user_prompt)
+            processed = process_images(captured_frames, invert_depth, depth_contrast, user_prompt, user_seed, user_steps)
             images_gif_path = images_to_gif(captured_frames)
             processed_gif_path = images_to_gif(processed)
             return [
@@ -237,7 +237,7 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
 
     webcam.stream(
         fn=stream_callback,
-        inputs=[webcam, invert_depth_checkbox, depth_contrast_slider, user_prompt],
+        inputs=[webcam, invert_depth_checkbox, depth_contrast_slider, user_prompt, user_seed, user_steps],
         outputs=[webcam, output, images_gallery, images_gif, images_count, processed_images_gallery, processed_gif]
     )
 
