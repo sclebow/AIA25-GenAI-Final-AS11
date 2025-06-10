@@ -30,6 +30,13 @@ from PIL import Image
 import torch
 
 from transformers import pipeline
+from diffusers import StableDiffusionXLControlNetPipeline, ControlNetModel, AutoencoderKL
+
+controlnet = ControlNetModel.from_pretrained("diffusers/controlnet-depth-sdxl-1.0", variant="fp16", use_safetensors=True, torch_dtype=torch.float16)
+vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16)
+
+pipe = StableDiffusionXLControlNetPipeline.from_pretrained("stabilityai/stable-diffusion-xl-base-1.0", controlnet=controlnet, vae=vae, variant="fp16", use_safetensors=True, torch_dtype=torch.float16)
+pipe.enable_model_cpu_offload()
 
 from creative_image_generation.config import Config
 
