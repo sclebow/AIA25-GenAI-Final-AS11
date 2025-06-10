@@ -194,8 +194,10 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
         images_count_value = f"# **Images captured:** {len(captured_frames)}/{num_images_to_capture}"
         if result is None:
             print("No more images to capture.")
-            processed = process_images(captured_frames, invert_depth, depth_contrast, user_prompt, user_seed, user_steps)
-            images_gif_path = images_to_gif(captured_frames)
+            # Store a copy before clearing
+            captured_frames_copy = list(captured_frames)
+            processed = process_images(captured_frames_copy, invert_depth, depth_contrast, user_prompt, user_seed, user_steps)
+            images_gif_path = images_to_gif(captured_frames_copy)
             processed_gif_path = images_to_gif(processed)
             # Reset state after processing to avoid repeated calls
             captured_frames.clear()
@@ -205,7 +207,7 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
             return [
                 gr.update(visible=False, streaming=False),  # Hide webcam
                 gr.update(visible=False),  # Hide output
-                gr.update(visible=True, value=captured_frames),  # Show gallery with captured images
+                gr.update(visible=True, value=captured_frames_copy),  # Show gallery with captured images
                 gr.update(visible=True, value=images_gif_path),  # Show images GIF
                 gr.update(visible=False, value=images_count_value),  # Show count
                 gr.update(visible=True, value=processed),  # Show processed images gallery
