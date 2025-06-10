@@ -42,6 +42,10 @@ capture_duration = 6  # e.g., 6 seconds for 3 images, 2 seconds apart
 capture_start_time = None
 capture_interval = capture_duration / num_images_to_capture
 last_capture_time = None
+# Global variables to track default settings
+default_prompt = "Multistory solid glass office building with white frames built by Norman Foster, with park and cherry blossoms in foreground"
+default_seed = 7797676568
+default_steps = 20
 
 # Define a function to process video frames for timed capture
 
@@ -91,6 +95,12 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
     # Reset button row below settings
     with gr.Row():
         reset_button = gr.Button("Reset App (Images will be reset)", variant="stop")
+    # User prompt text input under the reset button
+    with gr.Row():
+        user_prompt = gr.Textbox(label="User Prompt", value=default_prompt, placeholder="Enter a prompt for image processing", lines=2)
+    with gr.Row():
+        user_seed = gr.Textbox(label="Seed", value=str(default_seed), placeholder="Enter a seed for image processing", lines=1)
+        user_steps = gr.Textbox(label="Steps", value=str(default_steps), placeholder="Enter number of steps for image processing", lines=1)
 
     with gr.Row() as webcam_row:
         webcam = gr.Image(
@@ -121,8 +131,12 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
             imageio.mimsave(tmpfile.name, resized_images, format='GIF', duration=0.6, loop=0)
             return tmpfile.name
 
-    def process_images(images, invert_depth=False, depth_contrast=1.0):
+    def process_images(images, invert_depth=False, depth_contrast=1.0, user_prompt=None):
         processed_images = []
+        # You can use user_prompt in your processing logic if needed
+        Config.PROMPT = user_prompt if user_prompt else default_prompt
+        Config.SEED = int(user_seed) if user_seed.isdigit() else default_seed
+        Config.STEPS = int(user_steps) if user_steps.isdigit() else default_steps
         for img in images:
             pil_image = Image.fromarray(img)
             depth_image = depth_estimator(pil_image)['depth']
@@ -142,16 +156,18 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
             depth_image_np = depth_image_np[:, :, None]
             depth_image_np = np.concatenate([depth_image_np, depth_image_np, depth_image_np], axis=2)
             depth_image_np = cv2.cvtColor(depth_image_np, cv2.COLOR_RGB2BGR)
-            processed_images.append(depth_image_np)
+            # processed_images.append(depth_image_np)
+
+            
         return processed_images
 
-    def stream_callback(frame, invert_depth, depth_contrast):
+    def stream_callback(frame, invert_depth, depth_contrast, user_prompt):
         global captured_frames, capture_start_time, last_capture_time
         result = timed_capture(frame)
         images_count_value = f"# **Images captured:** {len(captured_frames)}/{num_images_to_capture}"
         if result is None:
             print("No more images to capture.")
-            processed = process_images(captured_frames, invert_depth, depth_contrast)
+            processed = process_images(captured_frames, invert_depth, depth_contrast, user_prompt)
             images_gif_path = images_to_gif(captured_frames)
             processed_gif_path = images_to_gif(processed)
             return [
@@ -214,7 +230,7 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
 
     webcam.stream(
         fn=stream_callback,
-        inputs=[webcam, invert_depth_checkbox, depth_contrast_slider],
+        inputs=[webcam, invert_depth_checkbox, depth_contrast_slider, user_prompt],
         outputs=[webcam, output, images_gallery, images_gif, images_count, processed_images_gallery, processed_gif]
     )
 
