@@ -179,6 +179,17 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
 
     def stream_callback(frame, invert_depth, depth_contrast, user_prompt, user_seed, user_steps):
         global captured_frames, capture_start_time, last_capture_time
+        # Prevent repeated processing if already processed
+        if getattr(stream_callback, "_already_processed", False):
+            return [
+                gr.update(visible=False, streaming=False),
+                gr.update(visible=False),
+                gr.update(visible=True, value=captured_frames),
+                gr.update(visible=True, value=None),
+                gr.update(visible=False, value=f"# **Images captured:** 0/{num_images_to_capture}"),
+                gr.update(visible=True, value=[]),
+                gr.update(visible=True, value=None)
+            ]
         result = timed_capture(frame)
         images_count_value = f"# **Images captured:** {len(captured_frames)}/{num_images_to_capture}"
         if result is None:
@@ -190,6 +201,7 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
             captured_frames.clear()
             capture_start_time = None
             last_capture_time = None
+            stream_callback._already_processed = True
             return [
                 gr.update(visible=False, streaming=False),  # Hide webcam
                 gr.update(visible=False),  # Hide output
@@ -199,6 +211,8 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
                 gr.update(visible=True, value=processed),  # Show processed images gallery
                 gr.update(visible=True, value=processed_gif_path)  # Show processed images GIF
             ]
+        # Reset the flag if capturing again
+        stream_callback._already_processed = False
         return [
             frame,  # Return the original frame
             result,  # Return the current frame
