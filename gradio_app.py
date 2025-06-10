@@ -16,6 +16,14 @@ Changing the value of the slider will control the period of the sine curve (the 
 
 """# import em"""
 
+# Commented out IPython magic to ensure Python compatibility.
+# %cd /content
+!rm -rf creative-image-generation
+!git clone https://github.com/nonoesp/creative-image-generation
+# %cd /content/creative-image-generation/
+
+from config import Config
+
 import math
 
 import pandas as pd
