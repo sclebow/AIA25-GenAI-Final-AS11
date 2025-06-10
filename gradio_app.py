@@ -151,22 +151,21 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
         for img in images:
             pil_image = Image.fromarray(img)
             depth_image = depth_estimator(pil_image)['depth']
-            depth_image_np = np.array(depth_image).astype(np.float32)
-            # Normalize to 0-1
-            ptp_val = np.ptp(depth_image_np)
-            depth_image_np = (depth_image_np - depth_image_np.min()) / (ptp_val + 1e-8)
-            # Apply contrast/stretch
-            mean = 0.5
-            depth_image_np = mean + (depth_image_np - mean) * depth_contrast
-            depth_image_np = np.clip(depth_image_np, 0, 1)
-            # Invert if needed
-            if invert_depth:
-                depth_image_np = 1.0 - depth_image_np
-            # Convert to 0-255 uint8
-            depth_image_np = (depth_image_np * 255).astype(np.uint8)
-            depth_image_np = depth_image_np[:, :, None]
+            # depth_image_np = np.array(depth_image).astype(np.float32)
+            # # Normalize to 0-1
+            # ptp_val = np.ptp(depth_image_np)
+            # depth_image_np = (depth_image_np - depth_image_np.min()) / (ptp_val + 1e-8)
+            # # Apply contrast/stretch
+            # mean = 0.5
+            # depth_image_np = mean + (depth_image_np - mean) * depth_contrast
+            # depth_image_np = np.clip(depth_image_np, 0, 1)
+            # # Invert if needed
+            # if invert_depth:
+            #     depth_image_np = 1.0 - depth_image_np
+            # depth_image_np = (depth_image_np * 255).astype(np.uint8)
+            # depth_image_np = depth_image_np[:, :, None]
             depth_image_np = np.concatenate([depth_image_np, depth_image_np, depth_image_np], axis=2)
-            depth_image_np = cv2.cvtColor(depth_image_np, cv2.COLOR_RGB2BGR)
+            # depth_image_np = cv2.cvtColor(depth_image_np, cv2.COLOR_RGB2BGR)
             # Convert to PIL for pipeline
             depth_pil = Image.fromarray(depth_image_np)
 
