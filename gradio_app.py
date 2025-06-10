@@ -47,7 +47,7 @@ captured_frames = []
 # Global number of images to capture
 num_images_to_capture = 3
 # Global duration in seconds over which to capture images
-capture_duration = 6  # e.g., 6 seconds for 3 images, 2 seconds apart
+capture_duration = 2  # e.g., 6 seconds for 3 images, 2 seconds apart
 # Global variables to track timing
 capture_start_time = None
 capture_interval = capture_duration / num_images_to_capture
@@ -136,7 +136,8 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
     def images_to_gif(images, size=(128, 128)):
         if not images:
             return None
-        resized_images = [cv2.resize(f, size) for f in images]
+        # Convert PIL images to numpy arrays if needed
+        resized_images = [cv2.resize(np.array(f), size) for f in images]
         with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as tmpfile:
             imageio.mimsave(tmpfile.name, resized_images, format='GIF', duration=0.6, loop=0)
             return tmpfile.name
