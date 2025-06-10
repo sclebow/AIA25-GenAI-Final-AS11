@@ -32,69 +32,46 @@ from transformers import pipeline
 
 depth_estimator = pipeline('depth-estimation', model="LiheYoung/depth-anything-small-hf")
 
-# Load OpenCV's pre-trained Haar cascade for face detection
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+# Global list to store captured frames
+captured_frames = []
+# Global number of images to capture
+num_images_to_capture = 3
+# Global duration in seconds over which to capture images
+capture_duration = 6  # e.g., 6 seconds for 3 images, 2 seconds apart
+# Global variables to track timing
+capture_start_time = None
+capture_interval = capture_duration / num_images_to_capture
+last_capture_time = None
 
-# Global list to store face regions
-face_regions = []
-# Global number of faces to capture
-num_faces_to_capture = 3
+# Define a function to process video frames for timed capture
 
-# Define a function to process video frames for face detection
-def detect_faces(frame):
-    global face_regions, num_faces_to_capture
-    # Only capture more faces if we haven't reached the limit
-    if len(face_regions) >= num_faces_to_capture:
+def timed_capture(frame):
+    global captured_frames, num_images_to_capture, capture_start_time, capture_interval, last_capture_time
+    import time
+    now = time.time()
+    if capture_start_time is None:
+        capture_start_time = now
+        last_capture_time = now - capture_interval  # So first frame is captured immediately
+    # Only capture if we haven't reached the limit
+    if len(captured_frames) < num_images_to_capture:
+        # Capture at intervals
+        if now - last_capture_time >= capture_interval:
+            captured_frames.append(frame.copy())
+            last_capture_time = now
+            print(f"Captured image {len(captured_frames)} at {now - capture_start_time:.2f}s")
+    # If we've captured enough images, return None to stop streaming
+    if len(captured_frames) >= num_images_to_capture:
         return None
-    # Ensure frame is writable
-    process_frame = frame.copy()
-    original_frame = frame.copy()
-
-    # Crop and resize the frame to speed up processing
-    max_size = 480
-
-    # Resize frame so that the larger dimension is max_size and maintain aspect ratio
-    h, w = process_frame.shape[:2]
-    if max(h, w) > max_size:
-        scale = max_size / float(max(h, w))
-        new_h, new_w = int(h * scale), int(w * scale)
-        process_frame = cv2.resize(process_frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
-
-    # Convert frame to numpy array if needed
-    if not isinstance(process_frame, np.ndarray):
-        process_frame = np.array(process_frame)
-    # Convert to BGR if RGBA
-    if process_frame.shape[2] == 4:
-        process_frame = cv2.cvtColor(process_frame, cv2.COLOR_RGBA2BGR)
-    elif process_frame.shape[2] == 1:
-        process_frame = cv2.cvtColor(process_frame, cv2.COLOR_GRAY2BGR)
-    # Face detection
-    gray = cv2.cvtColor(process_frame, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-    for i, (x, y, w, h) in enumerate(faces):
-        if len(face_regions) >= num_faces_to_capture:
-            break
-        scale_x = original_frame.shape[1] / float(process_frame.shape[1])
-        scale_y = original_frame.shape[0] / float(process_frame.shape[0])
-        face_region = original_frame[int(y * scale_y):int((y + h) * scale_y),
-                                     int(x * scale_x):int((x + w) * scale_x)]
-        face_regions.append(face_region)
-        print(f"Captured face {len(face_regions)}: {face_region.shape}")
-        print(f"len(face_regions): {len(face_regions)}")
-    # If we've captured enough faces, return None to stop streaming
-    if len(face_regions) >= num_faces_to_capture:
-        return None
-    # If no face was found, return the original frame (or None)
-    if len(face_regions) == 0:
-        return frame  # or None if you prefer a blank output
-    # Otherwise, return the last detected face
-    return face_regions[-1]
+    # Otherwise, return the current frame
+    return frame
 
 # Custom function to display captured faces after streaming stops
-with gr.Blocks(title="Live Webcam Feed with Face Tracking") as demo:
-    face_regions = []  # Reset face regions for each new session
+with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
+    captured_frames = []  # Reset for each new session
+    capture_start_time = None
+    last_capture_time = None
 
-    gr.Markdown("# Face Tracking using OpenCV.\n This app captures faces from your webcam and displays them in a gallery.\n\n **Note:** Ensure your webcam is enabled and accessible by the browser.")
+    gr.Markdown("# Timed Image Capture using OpenCV.\n This app captures a set number of images from your webcam, evenly spaced over a set duration, and displays them in a gallery.\n\n **Note:** Ensure your webcam is enabled and accessible by the browser.")
     with gr.Row() as webcam_row:
         webcam = gr.Image(
             sources=["webcam"],
@@ -102,74 +79,71 @@ with gr.Blocks(title="Live Webcam Feed with Face Tracking") as demo:
             label="Webcam Input",
             width=300,
             height=300,
-            # webcam_constraints={"width": 240, "height": 240, "fps": 15}
         )
-        output = gr.Image(label="Face Output")
+        output = gr.Image(label="Current Output")
 
     row_height = 300
     gif_width = 200
     with gr.Row():
-        faces_gallery = gr.Gallery(label="Captured Faces", visible=False, columns=num_faces_to_capture, scale=1, height=row_height)
-        faces_gif = gr.Image(label="Faces GIF", visible=False, scale=0, width=gif_width, height=row_height)
-        faces_count = gr.Markdown(f"# **Faces captured:** 0/{num_faces_to_capture}", visible=True)
+        images_gallery = gr.Gallery(label="Captured Images", visible=False, columns=num_images_to_capture, scale=1, height=row_height)
+        images_gif = gr.Image(label="Images GIF", visible=False, scale=0, width=gif_width, height=row_height)
+        images_count = gr.Markdown(f"# **Images captured:** 0/{num_images_to_capture}", visible=True)
 
     with gr.Row():
-        processed_faces_gallery = gr.Gallery(label="Processed Faces", visible=False, columns=num_faces_to_capture, scale=1, height=row_height)
+        processed_images_gallery = gr.Gallery(label="Processed Images", visible=False, columns=num_images_to_capture, scale=1, height=row_height)
         processed_gif = gr.Image(label="Processed GIF", visible=False, scale=0, width=gif_width, height=row_height)
 
-    def faces_to_gif(faces, size=(128, 128)):
-        if not faces:
+    def images_to_gif(images, size=(128, 128)):
+        if not images:
             return None
-        resized_faces = [cv2.resize(f, size) for f in faces]
+        resized_images = [cv2.resize(f, size) for f in images]
         with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as tmpfile:
-            imageio.mimsave(tmpfile.name, resized_faces, format='GIF', duration=0.6, loop=0)
+            imageio.mimsave(tmpfile.name, resized_images, format='GIF', duration=0.6, loop=0)
             return tmpfile.name
 
-    def process_faces(faces):
-        processed_faces = []
-        for face in faces:
-            pil_image = Image.fromarray(face)
+    def process_images(images):
+        processed_images = []
+        for img in images:
+            pil_image = Image.fromarray(img)
             depth_image = depth_estimator(pil_image)['depth']
             depth_image_np = np.array(depth_image)
             depth_image_np = depth_image_np[:, :, None]
             depth_image_np = np.concatenate([depth_image_np, depth_image_np, depth_image_np], axis=2)
             depth_image_np = cv2.cvtColor(depth_image_np, cv2.COLOR_RGB2BGR)
-
-            processed_faces.append(depth_image_np)
-
-        return processed_faces
+            processed_images.append(depth_image_np)
+        return processed_images
 
     def stream_callback(frame):
-        result = detect_faces(frame)
-        faces_count_value = f"# **Faces captured:** {len(face_regions)}/{num_faces_to_capture}"
+        result = timed_capture(frame)
+        images_count_value = f"# **Images captured:** {len(captured_frames)}/{num_images_to_capture}"
         if result is None:
-            print("No more faces to capture.")
-            processed = process_faces(face_regions)
-            faces_gif_path = faces_to_gif(face_regions)
-            processed_gif_path = faces_to_gif(processed)
+            print("No more images to capture.")
+            processed = process_images(captured_frames)
+            images_gif_path = images_to_gif(captured_frames)
+            processed_gif_path = images_to_gif(processed)
             return [
                 gr.update(visible=False, streaming=False),  # Hide webcam
                 gr.update(visible=False),  # Hide output
-                gr.update(visible=True, value=face_regions),  # Show gallery with captured faces
-                gr.update(visible=True, value=faces_gif_path),  # Show faces GIF
-                gr.update(visible=False, value=faces_count_value),  # Show count
-                gr.update(visible=True, value=processed),  # Show processed faces gallery
-                gr.update(visible=True, value=processed_gif_path)  # Show processed faces GIF
+                gr.update(visible=True, value=captured_frames),  # Show gallery with captured images
+                gr.update(visible=True, value=images_gif_path),  # Show images GIF
+                gr.update(visible=False, value=images_count_value),  # Show count
+                gr.update(visible=True, value=processed),  # Show processed images gallery
+                gr.update(visible=True, value=processed_gif_path)  # Show processed images GIF
             ]
         return [
             frame,  # Return the original frame
-            result,  # Return the last detected face
-            gr.update(visible=False),  # Hide gallery if not capturing faces
-            gr.update(visible=False),  # Hide faces GIF
-            gr.update(visible=True, value=faces_count_value),  # Show count
-            gr.update(visible=False),  # Hide processed faces gallery
-            gr.update(visible=False)   # Hide processed faces GIF
+            result,  # Return the current frame
+            gr.update(visible=False),  # Hide gallery if not capturing
+            gr.update(visible=False),  # Hide GIF
+            gr.update(visible=True, value=images_count_value),  # Show count
+            gr.update(visible=False),  # Hide processed gallery
+            gr.update(visible=False)   # Hide processed GIF
         ]
 
     webcam.stream(
         fn=stream_callback,
         inputs=webcam,
-        outputs=[webcam, output, faces_gallery, faces_gif, faces_count, processed_faces_gallery, processed_gif]
+        outputs=[webcam, output, images_gallery, images_gif, images_count, processed_images_gallery, processed_gif]
     )
 
 def run_demo():
