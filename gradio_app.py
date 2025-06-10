@@ -108,6 +108,10 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
     with gr.Row():
         reset_button = gr.Button("Reset", variant="stop")
 
+    with gr.Row():
+        invert_depth_checkbox = gr.Checkbox(label="Invert Depth", value=False)
+        depth_contrast_slider = gr.Slider(minimum=0.5, maximum=2.0, value=1.0, step=0.05, label="Depth Contrast")
+
     def images_to_gif(images, size=(128, 128)):
         if not images:
             return None
@@ -116,12 +120,23 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
             imageio.mimsave(tmpfile.name, resized_images, format='GIF', duration=0.6, loop=0)
             return tmpfile.name
 
-    def process_images(images):
+    def process_images(images, invert_depth=False, depth_contrast=1.0):
         processed_images = []
         for img in images:
             pil_image = Image.fromarray(img)
             depth_image = depth_estimator(pil_image)['depth']
-            depth_image_np = np.array(depth_image)
+            depth_image_np = np.array(depth_image).astype(np.float32)
+            # Normalize to 0-1
+            depth_image_np = (depth_image_np - depth_image_np.min()) / (depth_image_np.ptp() + 1e-8)
+            # Apply contrast/stretch
+            mean = 0.5
+            depth_image_np = mean + (depth_image_np - mean) * depth_contrast
+            depth_image_np = np.clip(depth_image_np, 0, 1)
+            # Invert if needed
+            if invert_depth:
+                depth_image_np = 1.0 - depth_image_np
+            # Convert to 0-255 uint8
+            depth_image_np = (depth_image_np * 255).astype(np.uint8)
             depth_image_np = depth_image_np[:, :, None]
             depth_image_np = np.concatenate([depth_image_np, depth_image_np, depth_image_np], axis=2)
             depth_image_np = cv2.cvtColor(depth_image_np, cv2.COLOR_RGB2BGR)
@@ -133,9 +148,11 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
         # No reset here; only process frames
         result = timed_capture(frame)
         images_count_value = f"# **Images captured:** {len(captured_frames)}/{num_images_to_capture}"
+        invert_depth = invert_depth_checkbox.value if hasattr(invert_depth_checkbox, 'value') else False
+        depth_contrast = depth_contrast_slider.value if hasattr(depth_contrast_slider, 'value') else 1.0
         if result is None:
             print("No more images to capture.")
-            processed = process_images(captured_frames)
+            processed = process_images(captured_frames, invert_depth, depth_contrast)
             images_gif_path = images_to_gif(captured_frames)
             processed_gif_path = images_to_gif(processed)
             return [
@@ -198,7 +215,7 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
 
     webcam.stream(
         fn=stream_callback,
-        inputs=webcam,
+        inputs=[webcam, invert_depth_checkbox, depth_contrast_slider],
         outputs=[webcam, output, images_gallery, images_gif, images_count, processed_images_gallery, processed_gif]
     )
 
