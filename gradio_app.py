@@ -80,6 +80,10 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
     last_capture_time = None
 
     gr.Markdown("# Timed Image Capture using OpenCV.\n This app captures a set number of images from your webcam, evenly spaced over a set duration, and displays them in a gallery.\n\n **Note:** Ensure your webcam is enabled and accessible by the browser.")
+    with gr.Row():
+        num_images_slider = gr.Slider(minimum=1, maximum=10, value=num_images_to_capture, step=1, label="Number of Images to Capture")
+        duration_slider = gr.Slider(minimum=2, maximum=30, value=capture_duration, step=1, label="Capture Duration (seconds)")
+        interval_display = gr.Markdown(f"**Interval:** {capture_interval:.2f} seconds", elem_id="interval-display")
     with gr.Row() as webcam_row:
         webcam = gr.Image(
             sources=["webcam"],
@@ -147,6 +151,23 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
             gr.update(visible=False),  # Hide processed gallery
             gr.update(visible=False)   # Hide processed GIF
         ]
+
+    def update_interval(num_images, duration):
+        interval = duration / num_images if num_images > 0 else 0
+        return gr.Markdown.update(value=f"**Interval:** {interval:.2f} seconds")
+
+    num_images_slider.change(update_interval, [num_images_slider, duration_slider], interval_display)
+    duration_slider.change(update_interval, [num_images_slider, duration_slider], interval_display)
+
+    def update_globals(num_images, duration):
+        global num_images_to_capture, capture_duration, capture_interval
+        num_images_to_capture = num_images
+        capture_duration = duration
+        capture_interval = duration / num_images if num_images > 0 else 0
+        return None
+
+    num_images_slider.change(update_globals, [num_images_slider, duration_slider], None)
+    duration_slider.change(update_globals, [num_images_slider, duration_slider], None)
 
     webcam.stream(
         fn=stream_callback,
