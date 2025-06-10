@@ -4,3 +4,9 @@ imageio
 matplotlib
 ipython
 gradio
+pandas
+plotly
+opencv-python
+Pillow
+transformers
+torch
