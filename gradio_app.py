@@ -143,13 +143,10 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
             processed_images.append(depth_image_np)
         return processed_images
 
-    def stream_callback(frame):
+    def stream_callback(frame, invert_depth, depth_contrast):
         global captured_frames, capture_start_time, last_capture_time
-        # No reset here; only process frames
         result = timed_capture(frame)
         images_count_value = f"# **Images captured:** {len(captured_frames)}/{num_images_to_capture}"
-        invert_depth = invert_depth_checkbox.value if hasattr(invert_depth_checkbox, 'value') else False
-        depth_contrast = depth_contrast_slider.value if hasattr(depth_contrast_slider, 'value') else 1.0
         if result is None:
             print("No more images to capture.")
             processed = process_images(captured_frames, invert_depth, depth_contrast)
