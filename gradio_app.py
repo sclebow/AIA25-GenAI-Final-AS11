@@ -176,4 +176,4 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
     )
 
 def run_demo():
-    demo.launch(share=True, debug=False)
+    demo.launch(share=True, debug=True)
