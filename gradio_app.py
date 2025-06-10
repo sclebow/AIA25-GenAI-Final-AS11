@@ -127,11 +127,7 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
 
     def stream_callback(frame):
         global captured_frames, capture_start_time, last_capture_time
-        # Reset state if this is the first frame of a new session
-        if len(captured_frames) >= num_images_to_capture or capture_start_time is None:
-            captured_frames = []
-            capture_start_time = None
-            last_capture_time = None
+        # No reset here; only process frames
         result = timed_capture(frame)
         images_count_value = f"# **Images captured:** {len(captured_frames)}/{num_images_to_capture}"
         if result is None:
