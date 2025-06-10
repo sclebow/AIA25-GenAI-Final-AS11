@@ -154,7 +154,7 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
             depth_image_np = np.array(depth_image)
             depth_image_np = depth_image_np[:, :, None]
             depth_image_np = np.concatenate([depth_image_np, depth_image_np, depth_image_np], axis=2)
-            depth_image_np = Image.fromarray(depth_image_np)
+            depth_pil = Image.fromarray(depth_image_np)
 
             # depth_image_np = np.array(depth_image).astype(np.float32)
             # # Normalize to 0-1
