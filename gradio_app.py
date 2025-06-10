@@ -105,6 +105,9 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
         processed_images_gallery = gr.Gallery(label="Processed Images", visible=False, columns=num_images_to_capture, scale=1, height=row_height)
         processed_gif = gr.Image(label="Processed GIF", visible=False, scale=0, width=gif_width, height=row_height)
 
+    with gr.Row():
+        reset_button = gr.Button("Reset", variant="stop")
+
     def images_to_gif(images, size=(128, 128)):
         if not images:
             return None
@@ -170,6 +173,28 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
 
     num_images_slider.change(update_globals, [num_images_slider, duration_slider], None)
     duration_slider.change(update_globals, [num_images_slider, duration_slider], None)
+
+    def reset_all():
+        global captured_frames, capture_start_time, last_capture_time
+        captured_frames = []
+        capture_start_time = None
+        last_capture_time = None
+        images_count_value = f"# **Images captured:** 0/{num_images_to_capture}"
+        return [
+            gr.update(visible=True, streaming=True),  # Show webcam
+            gr.update(visible=False),  # Hide output
+            gr.update(visible=False, value=[]),  # Hide gallery
+            gr.update(visible=False, value=None),  # Hide GIF
+            gr.update(visible=True, value=images_count_value),  # Reset count
+            gr.update(visible=False, value=[]),  # Hide processed gallery
+            gr.update(visible=False, value=None)  # Hide processed GIF
+        ]
+
+    reset_button.click(
+        reset_all,
+        inputs=None,
+        outputs=[webcam, output, images_gallery, images_gif, images_count, processed_images_gallery, processed_gif]
+    )
 
     webcam.stream(
         fn=stream_callback,
