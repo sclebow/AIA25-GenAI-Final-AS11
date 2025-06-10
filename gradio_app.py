@@ -151,6 +151,11 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
         for img in images:
             pil_image = Image.fromarray(img)
             depth_image = depth_estimator(pil_image)['depth']
+            depth_image_np = np.array(depth_image)
+            depth_image_np = depth_image_np[:, :, None]
+            depth_image_np = np.concatenate([depth_image_np, depth_image_np, depth_image_np], axis=2)
+            depth_image_np = Image.fromarray(depth_image_np)
+
             # depth_image_np = np.array(depth_image).astype(np.float32)
             # # Normalize to 0-1
             # ptp_val = np.ptp(depth_image_np)
@@ -164,10 +169,10 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
             #     depth_image_np = 1.0 - depth_image_np
             # depth_image_np = (depth_image_np * 255).astype(np.uint8)
             # depth_image_np = depth_image_np[:, :, None]
-            depth_image_np = np.concatenate([depth_image_np, depth_image_np, depth_image_np], axis=2)
+            # depth_image_np = np.concatenate([depth_image_np, depth_image_np, depth_image_np], axis=2)
             # depth_image_np = cv2.cvtColor(depth_image_np, cv2.COLOR_RGB2BGR)
             # Convert to PIL for pipeline
-            depth_pil = Image.fromarray(depth_image_np)
+            # depth_pil = Image.fromarray(depth_image_np)
 
             scale = 0.5
             generator = torch.Generator(Config.TORCH_DEVICE).manual_seed(Config.SEED)
