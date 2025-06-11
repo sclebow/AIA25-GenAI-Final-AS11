@@ -157,8 +157,11 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
         Config.STEPS = int(user_steps) if user_steps and str(user_steps).isdigit() else default_steps
         for img in images:
             pil_image = Image.fromarray(img)
+                
             depth_image = depth_estimator(pil_image)['depth']
-            depth_image_np = np.array(depth_image).astype(np.float32)
+            depth_image_np = np.array(depth_image).astype(np.float16)
+            depth_image_np = depth_image_np[:, :, None]
+            depth_image_np = np.concatenate([depth_image_np, depth_image_np, depth_image_np], axis=2)
             depth_pil = Image.fromarray(depth_image_np)
 
             scale = 0.5
