@@ -188,7 +188,7 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
 
             scale = 0.5
             generator = torch.Generator(Config.TORCH_DEVICE).manual_seed(Config.SEED)
-            image = pipe(Config.PROMPT, image=depth_image_np, control_image=depth_image_np, num_inference_steps=Config.STEPS, generator=generator, strength=0.99,controlnet_conditioning_scale=scale).images[0]
+            image = pipe(Config.PROMPT, image=depth_pil, control_image=depth_pil, num_inference_steps=Config.STEPS, generator=generator, strength=0.99,controlnet_conditioning_scale=scale).images[0]
 
             processed_images.append(image)
         return processed_images
