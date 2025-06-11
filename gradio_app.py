@@ -28,6 +28,12 @@ import imageio
 import tempfile
 from PIL import Image
 import torch
+from google.colab import userdata
+
+token = userdata.get('HF_TOKEN')
+os.environ['HF_TOKEN'] = token
+
+print("HF_TOKEN environment variable has been set.")
 
 from transformers import pipeline
 from diffusers import StableDiffusionXLControlNetPipeline, ControlNetModel, AutoencoderKL
@@ -35,7 +41,7 @@ from diffusers import StableDiffusionXLControlNetPipeline, ControlNetModel, Auto
 controlnet = ControlNetModel.from_pretrained("diffusers/controlnet-depth-sdxl-1.0", variant="fp16", use_safetensors=True, torch_dtype=torch.float16)
 vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16)
 
-pipe = StableDiffusionXLControlNetPipeline.from_pretrained("stabilityai/stable-diffusion-xl-base-1.0", controlnet=controlnet, vae=vae, variant="fp16", use_safetensors=True, torch_dtype=torch.float16)
+pipe = StableDiffusionXLControlNetPipeline.from_pretrained("stabilityai/stable-diffusion-xl-base-1.0", controlnet=controlnet, vae=vae, variant="fp16", use_safetensors=True, torch_dtype=torch.float16, token=token)
 pipe.enable_model_cpu_offload()
 
 from creative_image_generation.config import Config
@@ -55,7 +61,7 @@ last_capture_time = None
 # Global variables to track default settings
 default_prompt = "Multistory solid glass office building with white frames built by Norman Foster, with park and cherry blossoms in foreground"
 default_seed = 7797676568
-default_steps = 5
+default_steps = 10
 
 # Define a function to process video frames for timed capture
 
