@@ -157,38 +157,17 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
         Config.STEPS = int(user_steps) if user_steps and str(user_steps).isdigit() else default_steps
         for img in images:
             # Convert OpenCV image (BGR) to PIL image (RGB)
-            # if isinstance(img, np.ndarray):
-            #     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            if not isinstance(img, Image.Image):
-                pil_image = Image.fromarray(img)
+            pil_image = Image.fromarray(img)
                 
             depth_image = depth_estimator(pil_image)['depth']
-            depth_image_np = np.array(depth_image)
+            depth_image_np = np.array(depth_image).astype(np.float16)
             depth_image_np = depth_image_np[:, :, None]
             depth_image_np = np.concatenate([depth_image_np, depth_image_np, depth_image_np], axis=2)
             depth_pil = Image.fromarray(depth_image_np)
 
-            # depth_image_np = np.array(depth_image).astype(np.float32)
-            # # Normalize to 0-1
-            # ptp_val = np.ptp(depth_image_np)
-            # depth_image_np = (depth_image_np - depth_image_np.min()) / (ptp_val + 1e-8)
-            # # Apply contrast/stretch
-            # mean = 0.5
-            # depth_image_np = mean + (depth_image_np - mean) * depth_contrast
-            # depth_image_np = np.clip(depth_image_np, 0, 1)
-            # # Invert if needed
-            # if invert_depth:
-            #     depth_image_np = 1.0 - depth_image_np
-            # depth_image_np = (depth_image_np * 255).astype(np.uint8)
-            # depth_image_np = depth_image_np[:, :, None]
-            # depth_image_np = np.concatenate([depth_image_np, depth_image_np, depth_image_np], axis=2)
-            # depth_image_np = cv2.cvtColor(depth_image_np, cv2.COLOR_RGB2BGR)
-            # Convert to PIL for pipeline
-            # depth_pil = Image.fromarray(depth_image_np)
-
             scale = 0.5
             generator = torch.Generator(Config.TORCH_DEVICE).manual_seed(Config.SEED)
-            image = pipe(Config.PROMPT, image=depth_pil, control_image=depth_pil, num_inference_steps=Config.STEPS, generator=generator, strength=0.99,controlnet_conditioning_scale=scale).images[0]
+            image = pipe(Config.PROMPT, image=depth_pil, control_image=depth_pil, num_inference_steps=Config.STEPS, generator=generator, strength=0.99, controlnet_conditioning_scale=scale).images[0]
 
             processed_images.append(image)
         return processed_images
