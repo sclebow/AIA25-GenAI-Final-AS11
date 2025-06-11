@@ -29,6 +29,7 @@ import tempfile
 from PIL import Image
 import torch
 from google.colab import userdata
+import os
 
 token = userdata.get('HF_TOKEN')
 os.environ['HF_TOKEN'] = token
