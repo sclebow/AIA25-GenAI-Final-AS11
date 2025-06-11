@@ -156,7 +156,12 @@ with gr.Blocks(title="Live Webcam Feed with Timed Capture") as demo:
         Config.SEED = int(user_seed) if user_seed and str(user_seed).isdigit() else default_seed
         Config.STEPS = int(user_steps) if user_steps and str(user_steps).isdigit() else default_steps
         for img in images:
-            pil_image = Image.fromarray(img)
+            # Convert OpenCV image (BGR) to PIL image (RGB)
+            if isinstance(img, np.ndarray):
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            if not isinstance(img, Image.Image):
+                pil_image = Image.fromarray(img)
+                
             depth_image = depth_estimator(pil_image)['depth']
             depth_image_np = np.array(depth_image)
             depth_image_np = depth_image_np[:, :, None]
